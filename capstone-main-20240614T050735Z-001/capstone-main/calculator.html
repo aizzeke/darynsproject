@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoPortal Северо-Казахстанской СХОС</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map {
+            height: 500px;
+            width: 100%;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+            padding: 20px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 10px;
+        }
+        .form-row {
+            display: flex;
+            justify-content: space-between;
+        }
+        .form-group label {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Геопортал Северо-Казахстанской СХОС</h1>
+        <div id="map"></div>
+        <canvas id="yieldChart" width="400" height="200"></canvas>
+        
+        <h2>Обновить данные графика</h2>
+        <div id="formContainer"></div>
+        <button onclick="updateChart()">Обновить график</button>
+
+        <h2>Скачать Excel файлы</h2>
+        <div class="form-group">
+            <label for="excelFile">Выберите файл для скачивания:</label>
+            <select id="excelFile">
+                <option value="data/Акт уборки 2016.xlsx">Акт уборки 2016.xlsx</option>
+                <option value="data/Акт уборки 2017.xlsx">Акт уборки 2017.xlsx</option>
+                <option value="data/Акт уборки 2018.xlsx">Акт уборки 2018.xlsx</option>
+                <option value="data/Акт уборки 2019.xlsx">Акт уборки 2019.xlsx</option>
+                <option value="data/Акт уборки 2020.xlsx">Акт уборки 2020.xlsx</option>
+                <option value="data/Акт уборки 2021.xlsx">Акт уборки 2021.xlsx</option>
+                <option value="data/запасы продуктивной влаги в метровом слое почвы 2015.xlsx">запасы продуктивной влаги в метровом слое почвы 2015.xlsx</option>
+                <option value="data/запасы продуктивной влаги в метровом слое почвы 2020-2021.xlsx">запасы продуктивной влаги в метровом слое почвы 2020-2021.xlsx</option>
+                <option value="data/запасы продуктивной влаги в метровом слое почвы 2021-2022.xlsx">запасы продуктивной влаги в метровом слое почвы 2021-2022.xlsx</option>
+                <option value="data/Запасы продуктивной влаги в метровом слое почвы перед уходом в 2016-2017.xlsx">Запасы продуктивной влаги в метровом слое почвы перед уходом в 2016-2017.xlsx</option>
+                <option value="data/Запасы продуктивной влаги в метровом слое почвы перед уходом в 2017-2018.xlsx">Запасы продуктивной влаги в метровом слое почвы перед уходом в 2017-2018.xlsx</option>
+                <option value="data/Оптимальные дозы внесения минеральных удобрений 2019.xlsx">Оптимальные дозы внесения минеральных удобрений 2019.xlsx</option>
+                <option value="data/Оптимальные сроки посева селхоз культур 2015.xlsx">Оптимальные сроки посева сельхоз культур 2015.xlsx</option>
+                <option value="data/Протравители семян зерновых культур 2019.xlsx">Протравители семян зерновых культур 2019.xlsx</option>
+                <option value="data/Расчет доз удобрений 2019.xlsx">Расчет доп удобрений 2019.xlsx</option>
+                <option value="data/расчет доп удобрении 2017-2018.xlsx">расчет доп удобрений 2017-2018.xlsx</option>
+                <option value="data/Состояние посевов сортов яровой пшеницы 2015.xlsx">Состояние посевов сортов яровой пшеницы 2015.xlsx</option>
+                <option value="data/Сроки скашивания, урожай и качество зерна пшеницы 2015.xlsx">Сроки скашивания, урожай и качество зерна пшеницы 2015.xlsx</option>
+            </select>
+            <button onclick="downloadExcel()">Скачать</button>
+        </div>
+        
+    </div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+
+        const map = L.map('map').setView([54.870, 69.210], 10);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        const marker = L.marker([54.870, 69.210]).addTo(map)
+            .bindPopup('Северо-Казахстанская СХОС')
+            .openPopup();
+
+        const initialData = [12, 19, 3, 5, 2, 3, 10, 15, 9, 7, 11, 6];
+        const yieldData = {
+            labels: ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'],
+            datasets: [{
+                label: 'Прогноз урожайности',
+                data: initialData,
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        };
+
+        // Инициализация графика
+        const ctx = document.getElementById('yieldChart').getContext('2d');
+        const yieldChart = new Chart(ctx, {
+            type: 'line',
+            data: yieldData,
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        const formContainer = document.getElementById('formContainer');
+        for (let rowIndex = 0; rowIndex < 4; rowIndex++) {
+            const formRow = document.createElement('div');
+            formRow.className = 'form-row';
+
+            for (let colIndex = 0; colIndex < 3; colIndex++) {
+                const monthIndex = rowIndex * 3 + colIndex;
+                if (monthIndex >= yieldData.labels.length) break;
+
+                const formGroup = document.createElement('div');
+                formGroup.className = 'form-group';
+
+                const labelElement = document.createElement('label');
+                labelElement.textContent = yieldData.labels[monthIndex];
+                formGroup.appendChild(labelElement);
+
+                const inputElement = document.createElement('input');
+                inputElement.type = 'number';
+                inputElement.value = initialData[monthIndex];
+                inputElement.id = `data-${monthIndex}`;
+                formGroup.appendChild(inputElement);
+
+                formRow.appendChild(formGroup);
+            }
+
+            formContainer.appendChild(formRow);
+        }
+
+        function updateChart() {
+            const newData = [];
+            yieldData.labels.forEach((label, index) => {
+                const inputElement = document.getElementById(`data-${index}`);
+                newData.push(Number(inputElement.value));
+            });
+            yieldChart.data.datasets[0].data = newData;
+            yieldChart.update();
+        }
+
+        function downloadExcel() {
+            const selectedFile = document.getElementById('excelFile').value;
+            window.location.href = selectedFile;
+        }
+    </script>
+</body>
+</html>
